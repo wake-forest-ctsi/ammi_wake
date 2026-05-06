@@ -1,0 +1,5 @@
+dbt-core
+sqlalchemy
+pandas
+duckdb
+dbt-duckdb

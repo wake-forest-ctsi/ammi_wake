@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: rpt_preeclampsia
+    description: "{{ doc('rpt_preeclampsia') }}"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - birthid
+            - feature_name
+
+    columns:
+      - name: birthid
+        data_type: string
+        type: string
+        description: Unique deidentified identifier for each pregnancy
+        tests:
+          - not_null
+      
+      - name: feature_category
+        data_type: string
+        type: string
+        description: High level category of this feature (e.g. diagnosis, vital, insurance etc)
+        tests:
+          - not_null
+
+      - name: feature_name
+        data_type: string
+        type: string
+        description: Name of the feature
+        tests:
+          - not_null
+
+      - name: feature_value
+        data_type: float
+        description: Numeric or binary value of the given feature
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+              where: "feature_category = 'phenotype'"

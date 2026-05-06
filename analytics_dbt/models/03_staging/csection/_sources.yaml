@@ -1,0 +1,145 @@
+sources:
+  - name: csection
+    schema: dbo
+    tables:
+      - name: c_section_timmings
+        description: "operation room timing related to c-section"
+        columns:
+          - name: birthid
+            data_type: varchar
+          - name: mother_encounterid
+            data_type: varchar
+          - name: proc_name
+            data_type: varchar
+          - name: case_req_dt
+            data_type: varchar
+          - name: case_req_tm
+            data_type: varchar
+          - name: anes_signoff_dt
+            data_type: varchar
+          - name: anes_signoff_tm
+            data_type: varchar
+          - name: anes_close_dt
+            data_type: varchar
+          - name: anes_close_tm
+            data_type: varchar
+          - name: anes_addend_dt
+            data_type: varchar
+          - name: anes_addend_tm
+            data_type: varchar
+          - name: sched_setup_dt
+            data_type: varchar
+          - name: sched_setup_tm
+            data_type: varchar
+          - name: anes_epidural_dt
+            data_type: varchar
+          - name: anes_epidural_tm
+            data_type: varchar
+          - name: sched_in_room_dt
+            data_type: varchar
+          - name: sched_in_room_tm
+            data_type: varchar
+          - name: sched_proc_start_dt
+            data_type: varchar
+          - name: sched_proc_start_tm
+            data_type: varchar
+          - name: sched_proc_comp_dt
+            data_type: varchar
+          - name: sched_proc_comp_tm
+            data_type: varchar
+          - name: sched_out_room_dt
+            data_type: varchar
+          - name: sched_out_room_tm
+            data_type: varchar
+          - name: sched_cleanup_dt
+            data_type: varchar
+          - name: sched_cleanup_tm
+            data_type: varchar
+          - name: fac_disch_dt
+            data_type: varchar
+          - name: fac_disch_tm
+            data_type: varchar
+          - name: in_preproc_dt
+            data_type: varchar
+          - name: in_preproc_tm
+            data_type: varchar
+          - name: anes_start_dt
+            data_type: varchar
+          - name: anes_start_tm
+            data_type: varchar
+          - name: preproc_comp_dt
+            data_type: varchar
+          - name: preproc_comp_tm
+            data_type: varchar
+          - name: in_room_dt
+            data_type: varchar
+          - name: in_room_tm
+            data_type: varchar
+          - name: anes_induct_dt
+            data_type: varchar
+          - name: anes_induct_tm
+            data_type: varchar
+          - name: anes_ready_dt
+            data_type: varchar
+          - name: anes_ready_tm
+            data_type: varchar
+          - name: proc_start_dt
+            data_type: varchar
+          - name: proc_start_tm
+            data_type: varchar
+          - name: incision_start_dt
+            data_type: varchar
+          - name: incision_start_tm
+            data_type: varchar
+          - name: proc_comp_dt
+            data_type: varchar
+          - name: proc_comp_tm
+            data_type: varchar
+          - name: out_room_dt
+            data_type: varchar
+          - name: out_room_tm
+            data_type: varchar
+          - name: in_recovery_dt
+            data_type: varchar
+          - name: in_recovery_tm
+            data_type: varchar
+          - name: anes_stop_dt
+            data_type: varchar
+          - name: anes_stop_tm
+            data_type: varchar
+          - name: recov_disch_ready_dt
+            data_type: varchar
+          - name: recov_disch_ready_tm
+            data_type: varchar
+          - name: out_recovery_dt
+            data_type: varchar
+          - name: out_recovery_tm
+            data_type: varchar
+          - name: in_phase_ii_dt
+            data_type: varchar
+          - name: in_phase_ii_tm
+            data_type: varchar
+          - name: phase_ii_disch_ready_dt
+            data_type: varchar
+          - name: phase_ii_disch_ready_tm
+            data_type: varchar
+          - name: out_phase_ii_dt
+            data_type: varchar
+          - name: out_phase_ii_tm
+            data_type: varchar
+          - name: anes_emerge_dt
+            data_type: varchar
+          - name: anes_emerge_tm
+            data_type: varchar
+          - name: intubation_dt
+            data_type: varchar
+          - name: intubation_tm
+            data_type: varchar
+          - name: extubation_dt
+            data_type: varchar
+          - name: extubation_tm
+            data_type: varchar
+          - name: service_start_dt
+            data_type: varchar
+          - name: service_start_tm
+            data_type: varchar

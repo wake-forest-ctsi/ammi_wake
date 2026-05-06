@@ -1,0 +1,23 @@
+fixed:
+prompts:
+  type:
+    type: string
+    hint: database type, example: sqlserver or snowflake
+  driver:
+    type: string
+    hint: ODBC Driver 18 for SQL Server, blank for snowflake
+  server:
+    type: string
+    hint: The server hostname
+  port:
+    type: string
+    hint: The server port
+  database:
+    type: string
+    hint: The database name (ammi for example)
+  schema:
+    type: string
+    hint: The schema name (dbo etc.)
+  windows_login:
+    hint: "Set this to true to use Windows authentication. This is only available for SQL Server."
+    type: string

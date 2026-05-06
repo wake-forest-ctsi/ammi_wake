@@ -1,0 +1,11 @@
+dotenv
+matplotlib
+numpy
+pandas
+scikit-learn
+scipy
+seaborn
+shap==0.48.0
+ipykernel
+pyarrow
+nbstripout
