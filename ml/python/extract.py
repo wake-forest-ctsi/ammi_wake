@@ -19,9 +19,9 @@ if (__name__ == "__main__"):
         # 'rpt_preeclampsia': 'preeclampsia/preeclampsia_all_features.parquet',
         # 'rpt_depression': 'ppd/depression_all_features.parquet',
         'rpt_surgical_site_infection': 'ssi/ssi_all_features.parquet',
-        'rpt_surgical_site_infection_30_days': 'ssi/ssi_all_features_30_days.parquet',
-        'int_ssi__unique_raw_dx_to_cmqcc': 'ssi/raw_dx_cmqcc_mapping.parquet',
-        'rpt_ssi__check_diabetes': 'ssi/ssi_check_diabetes.parquet'
+        # 'rpt_surgical_site_infection_30_days': 'ssi/ssi_all_features_30_days.parquet',
+        # 'int_ssi__unique_raw_dx_to_cmqcc': 'ssi/raw_dx_cmqcc_mapping.parquet',
+        # 'rpt_ssi__check_diabetes': 'ssi/ssi_check_diabetes.parquet'
     }
 
     for report_table, output_parquet_file in reports.items():
