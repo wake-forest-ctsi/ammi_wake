@@ -1,15 +1,14 @@
-from sklearn.base import BaseEstimator, TransformerMixin
-import hashlib
+from sklearn.base import BaseEstimator, TransformerMixin, clone
+from sklearn.utils.validation import check_is_fitted
+from joblib import hash as joblib_hash
 import numpy as np
-import shap
 from sklearn.feature_selection import mutual_info_classif
-from datetime import datetime
 
 class CachedTopKSelector(BaseEstimator, TransformerMixin):
     '''
       Select top-k features using model.feature_importances_, mutal_info_classif or SHAP values
       This version tries to reduce the selector computation to only once per CV fold 
-      Be careful that it uses global_cache so ideally you only have one throughout the script or clean up the cache first
+      Rankings are cached by training data and ranking configuration, independently of k.
     '''
     # global cache for the score
     _global_cache = {}
@@ -25,14 +24,13 @@ class CachedTopKSelector(BaseEstimator, TransformerMixin):
         self.k = k
         # print(f'being init: {CachedTopKSelector._global_cache.keys()}')
     
-    def _array_hash(self, a):
-        return hashlib.sha1(np.ascontiguousarray(a).view(np.uint8)).hexdigest()
-
-    def _cache_key(self, X, y):
+    def _cache_key(self, X, y, columns):
         return (
             self.method,
-            self._array_hash(X),
-            self._array_hash(y)
+            joblib_hash(self.model),
+            columns,
+            joblib_hash(np.ascontiguousarray(X)),
+            joblib_hash(np.ascontiguousarray(y)),
         )
     
     @classmethod
@@ -43,20 +41,23 @@ class CachedTopKSelector(BaseEstimator, TransformerMixin):
         '''
             compute the scores given X, y
         '''
-        print(f"re computing score X shape = {X.shape}, y sum = {y.sum()} {datetime.now()}", flush=True)
         if self.method == 'importance':
-            self.model.fit(X, y)
-            scores = self.model.feature_importances_
+            scores = clone(self.model).fit(X, y).feature_importances_
         
         elif self.method == 'shap':
-            self.model.fit(X, y)
-            print(f"starting shap calculation {datetime.now()}", flush=True)
-            explainer = shap.TreeExplainer(self.model, data=X,
+            import shap
+
+            model = clone(self.model).fit(X, y)
+            explainer = shap.TreeExplainer(model, data=X,
                                 model_output='probability', feature_perturbation='interventional')
             shap_values = explainer(X, check_additivity=True)
-            print("done shap calculation", flush=True)
-            tmp = np.abs(shap_values.values[:,:,1])
-            scores = np.mean(tmp, axis=0)
+            positive = np.flatnonzero(model.classes_ == 1)
+            if len(positive) != 1 or len(model.classes_) != 2:
+                raise ValueError('SHAP ranking requires binary labels including class 1.')
+            values = shap_values.values
+            if values.ndim == 3:
+                values = values[:, :, positive.item()]
+            scores = np.abs(values).mean(axis=0)
         
         elif self.method == 'information_gain':
             scores = mutual_info_classif(X, y)
@@ -67,9 +68,16 @@ class CachedTopKSelector(BaseEstimator, TransformerMixin):
         return scores
 
     def fit(self, X, y):
+        if not isinstance(self.k, (int, np.integer)) or self.k < 1:
+            raise ValueError('k must be a positive integer.')
+        columns = tuple(X.columns) if hasattr(X, 'columns') else ()
         X = np.asarray(X)
         y = np.asarray(y)
-        key = self._cache_key(X, y)
+        self.n_features_in_ = X.shape[1]
+        self.feature_names_ = np.asarray(columns or [
+            f'x{i}' for i in range(self.n_features_in_)
+        ], dtype=object)
+        key = self._cache_key(X, y, columns)
 
         if key in CachedTopKSelector._global_cache:
             scores = CachedTopKSelector._global_cache[key]
@@ -81,7 +89,10 @@ class CachedTopKSelector(BaseEstimator, TransformerMixin):
         return self
     
     def transform(self, X):
+        check_is_fitted(self, 'indices_')
         X = np.asarray(X)
+        if X.shape[1] != self.n_features_in_:
+            raise ValueError('Input width differs from the fitted selector.')
         return X[:, self.indices_]
 
     def get_support(self):
@@ -89,6 +100,12 @@ class CachedTopKSelector(BaseEstimator, TransformerMixin):
           this only supports indices=True, which returns the indices only
           NOTE: the order is reversed
         '''
+        check_is_fitted(self, 'indices_')
         return self.indices_
+
+    def get_feature_names_out(self, input_features=None):
+        indices = self.get_support()
+        names = self.feature_names_ if input_features is None else np.asarray(input_features)
+        return names[indices]
 
     

@@ -129,3 +129,10 @@ ml_analysis/
 # some exception rules
 ###############################################################################
 !requirements.txt
+
+###############################################################################
+# temporary files for paper revision
+###############################################################################
+ml/python/ssi/generate_synthetic_ssi.py
+SSI*.md
+ml/python/ssi/notebooks/results

@@ -85,7 +85,9 @@ def feature_filter(df_pivoted, skip_medadmin_ingredient=True):
         code = x[:x.index('_dx_count')]
         if code[:3] in ['Z23', 'Z31', 'Z32', 'Z33', 'Z34', 'Z36', 'Z3A']:
             cols_to_count[code[:3]].append(x)
-            cols_to_drop.append(f"{code}_has_dx")
+            has_dx_col = f"{code}_has_dx"
+            if has_dx_col in df_pivoted.columns:
+                cols_to_drop.append(has_dx_col)
     cols_to_add = []
     for k, v in cols_to_count.items():
         cols_to_add.append(f'{k}_all_dx_count')

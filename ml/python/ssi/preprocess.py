@@ -7,13 +7,15 @@ logger = logging.getLogger(__name__)
 # if you have vital table, it can be read from there (sbp, dpb, bmi, wt)
 obsclin_repeated_code = ('8480-6', '8462-4', '39156-5', '3141-9')
 
-def preprocess(df_pivoted, drop_repeat_obsclin=True, min_binary_ones=10):
+def preprocess(df_pivoted, drop_repeat_obsclin=True, min_binary_ones=10, *, defer_imputation=False):
     '''
       preprocess the df pivoted dataframe
       - remove rows without required columns
       - drop duplicated
       - if obsclin and vital tables are both included, drop the repeated obsclin measurement
       - for fillna, see each columns below
+      - with defer_imputation=True, fit imputation means inside each training
+        fold with ClinicalImputer and skip exposure-subset constant screening
     '''
     import numpy as np
 
@@ -62,6 +64,7 @@ def preprocess(df_pivoted, drop_repeat_obsclin=True, min_binary_ones=10):
 
     isna_cols = {}
     cols_to_drop = []
+    deferred_exposure_columns = []
     for col in cols_todo:
         # find the relevant columns
         code = col[:col.index('_has')]
@@ -84,8 +87,11 @@ def preprocess(df_pivoted, drop_repeat_obsclin=True, min_binary_ones=10):
                 isna_cols[f"{relevant_col}_isna"] = ((df_pivoted[col] == 1) & (df_pivoted[relevant_col].isna())).astype(float)
 
             # step 2: fill column with average
-            fill_value = df_pivoted.loc[df_pivoted[col] == 1, relevant_col].mean()
-            df_pivoted[relevant_col] = df_pivoted[relevant_col].fillna(fill_value)
+            if defer_imputation:
+                deferred_exposure_columns.append(relevant_col)
+            else:
+                fill_value = df_pivoted.loc[df_pivoted[col] == 1, relevant_col].mean()
+                df_pivoted[relevant_col] = df_pivoted[relevant_col].fillna(fill_value)
 
             # step 3: overwrite to 0.0 if has_med == 0
             df_pivoted.loc[df_pivoted[col]==0, relevant_col] = 0.0
@@ -96,12 +102,13 @@ def preprocess(df_pivoted, drop_repeat_obsclin=True, min_binary_ones=10):
             print(f"  Min, Max: {df_pivoted[relevant_col].min()} , {df_pivoted[relevant_col].max()}")
             print(f"  Count zeros: {(df_pivoted[relevant_col] == 0).sum()}")
 
-            # step 4: drop columns with only 1 value when has_med == 1
-            if df_pivoted.loc[df_pivoted[col]==1, relevant_col].nunique() <= 1:
-                print(f"  -> Marking {relevant_col} for drop")
-                cols_to_drop.append(relevant_col)
-                if f"{relevant_col}_isna" in isna_cols:
-                    cols_to_drop.append(f"{relevant_col}_isna")
+            # step 4 (legacy only): drop columns with only 1 value when has_med == 1
+            if not defer_imputation:
+                if df_pivoted.loc[df_pivoted[col]==1, relevant_col].nunique() <= 1:
+                    print(f"  -> Marking {relevant_col} for drop")
+                    cols_to_drop.append(relevant_col)
+                    if f"{relevant_col}_isna" in isna_cols:
+                        cols_to_drop.append(f"{relevant_col}_isna")
 
     # add back the isna_cols
     print(f"adding these isna columns: {list(isna_cols.keys())}")
@@ -139,9 +146,10 @@ def preprocess(df_pivoted, drop_repeat_obsclin=True, min_binary_ones=10):
         df_pivoted[f'{feat}_last_value'] = df_pivoted[f'{feat}_last_value'].fillna(0)
         df_pivoted.loc[null_rows, [f'{feat}_abs_change', f'{feat}_pct_change', 
                                    f'{feat}_abs_change_per_month', f'{feat}_pct_change_per_month']] = 0.0
-        fill_value = df_pivoted.loc[ (df_pivoted[f'{feat}_first_value_isna'] == 0) & (df_pivoted[f'{feat}_first_value_isna'] == 0),
-                                    [f'{feat}_gap_in_days']].mean()
-        df_pivoted[f'{feat}_gap_in_days'] = df_pivoted[f'{feat}_gap_in_days'].fillna(fill_value)   
+        if not defer_imputation:
+            fill_value = df_pivoted.loc[ (df_pivoted[f'{feat}_first_value_isna'] == 0) & (df_pivoted[f'{feat}_first_value_isna'] == 0),
+                                        [f'{feat}_gap_in_days']].mean()
+            df_pivoted[f'{feat}_gap_in_days'] = df_pivoted[f'{feat}_gap_in_days'].fillna(fill_value)   
 
     # ====  bp columns: when count = 0, fill std as 0, freq as 0, other stats mean; when count = 1, fill std as 0, others should be fine
     for prefix in ['all', 'before_delivery', 'after_delivery']:
@@ -158,7 +166,10 @@ def preprocess(df_pivoted, drop_repeat_obsclin=True, min_binary_ones=10):
             df_pivoted.loc[idx1, col] = 0.0
             for stat in ['mean', 'min', 'max']:
                 col = f'{feat}_{prefix}_{stat}_value'
-                fill_value = df_pivoted.loc[~idx, col].mean()
+                if defer_imputation:
+                    fill_value = np.nan
+                else:
+                    fill_value = df_pivoted.loc[~idx, col].mean()
                 df_pivoted.loc[idx, col] = fill_value
             if prefix == 'all':
                 freq_unit = 'week'
@@ -177,6 +188,8 @@ def preprocess(df_pivoted, drop_repeat_obsclin=True, min_binary_ones=10):
                  or x.endswith('_elixhauser_category_count')]
     print(f"{cols_todo} will be filled with 0")
     for col in cols_todo:
+        if defer_imputation and col in deferred_exposure_columns:
+            continue
         df_pivoted[col] = df_pivoted[col].fillna(0)
 
     # === enc count columns: fill with 0
@@ -201,7 +214,8 @@ def preprocess(df_pivoted, drop_repeat_obsclin=True, min_binary_ones=10):
     for col in cols_todo:
         if col not in df_pivoted.columns:  continue
         df_pivoted[f"{col}_isna"] = df_pivoted[col].isna().astype(float)
-        df_pivoted[col] = df_pivoted[col].fillna(df_pivoted[col].mean())
+        if not defer_imputation:
+            df_pivoted[col] = df_pivoted[col].fillna(df_pivoted[col].mean())
     df_pivoted = df_pivoted.copy()
 
     # === facility locations ====
@@ -245,6 +259,8 @@ def preprocess(df_pivoted, drop_repeat_obsclin=True, min_binary_ones=10):
         df_pivoted[f"{col}_isna"] = df_pivoted[col].isna().astype(float)
         if col.startswith('count'):
             fill_value = 0
+        elif defer_imputation:
+            continue
         else:
             fill_value = df_pivoted[col].mean()
         df_pivoted[col] = df_pivoted[col].fillna(fill_value)
